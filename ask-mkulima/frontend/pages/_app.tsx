@@ -1,13 +1,25 @@
 import Layout from '../components/Layout';
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
+import type { ReactElement, ReactNode } from 'react';
 
-function MyApp({ Component, pageProps }: AppProps) { // Corrected component definition
-  return (
-    <Layout>
-      <Component {...pageProps} />
-    </Layout>
-  );
+// Define a type for your custom page props if needed
+interface PageProps {
+  // Add any custom props here
+  // exampleProp?: string;
 }
 
-export default MyApp; // Corrected default export
+// Define a type for your custom AppProps if needed
+interface MyAppProps extends AppProps<PageProps> {
+  Component: {
+    getLayout?: (page: ReactElement) => ReactNode;
+  };
+}
+
+function MyApp({ Component, pageProps }: MyAppProps) {
+  const getLayout = Component.getLayout ?? ((page) => page);
+
+  return <Layout>{getLayout(<Component {...pageProps} />)}</Layout>;
+}
+
+export default MyApp;
