@@ -1,5 +1,3 @@
-// ask-mkulima/frontend/pages/chat.tsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { io } from 'socket.io-client';
@@ -9,19 +7,27 @@ import { Box, TextField, Button, List, ListItem, ListItemText, Typography, Avata
 import SendIcon from '@mui/icons-material/Send';
 import TypingIndicator from '../components/Chat/TypingIndicator';
 
+// Define the message interface
+interface Message {
+  sender: string; // The user ID of the sender
+  message: string; // The content of the message
+  timestamp: string; // ISO string timestamp of when the message was sent
+}
+
 const ChatPage: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]); // Updated type for messages
   const [message, setMessage] = useState('');
   const socket = useRef<any>(null);
   const [typing, setTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
   useEffect(() => {
-    setUser(AuthService.getUser());
+    const fetchedUser = AuthService.getUser();
+    setUser(fetchedUser);
 
-    if (!user) {
+    if (!fetchedUser) {
       router.push('/login');
       return;
     }
@@ -30,20 +36,20 @@ const ChatPage: React.FC = () => {
 
     socket.current.on('connect', () => {
       console.log('Connected to server');
-      socket.current.emit('join_room', user.id);
+      socket.current.emit('join_room', fetchedUser.id);
     });
 
-    socket.current.on('message', (data) => {
+    socket.current.on('message', (data: Message) => {
       setMessages((prevMessages) => [...prevMessages, data]);
     });
 
-    socket.current.on('typing', (userId) => {
+    socket.current.on('typing', (userId: string) => {  // Explicitly typing userId as string
       if (!typingUsers.includes(userId)) {
         setTypingUsers((prev) => [...prev, userId]);
       }
     });
 
-    socket.current.on('stopped typing', (userId) => {
+    socket.current.on('stopped typing', (userId: string) => {  // Explicitly typing userId as string
       setTypingUsers((prev) => prev.filter((id) => id !== userId));
     });
 
@@ -52,15 +58,15 @@ const ChatPage: React.FC = () => {
         socket.current.disconnect();
       }
     };
-  }, [user]);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!message) return;
+    if (!message || !user) return;  // Check if user is null
 
-    const newMessage = {
-      sender: user.id,
+    const newMessage: Message = {
+      sender: String(user.id), // Ensure user.id is treated as a string
       message: message,
       timestamp: new Date().toISOString(),
     };
@@ -75,11 +81,11 @@ const ChatPage: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(e.target.value);
-    if (socket.current && !typing) {
+    if (socket.current && !typing && user) {
       socket.current.emit('typing', user.id);
       setTyping(true);
     }
-    if (e.target.value === "" && typing) {
+    if (e.target.value === "" && typing && user) {
       socket.current.emit('stopped typing', user.id);
       setTyping(false);
     }

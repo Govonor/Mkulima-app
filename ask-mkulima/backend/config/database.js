@@ -1,20 +1,15 @@
-
 const mongoose = require('mongoose');
-const config = require('./config'); // Import your configuration
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(config.mongoURI, {
+    await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true,
-      // useCreateIndex: true, // Deprecated in mongoose 6
-      // useFindAndModify: false, // Deprecated in mongoose 6
+      useUnifiedTopology: true
     });
-
-    console.log('MongoDB Connected...');
+    console.log("✅ MongoDB connected...");
   } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1); // Exit process with failure
+    console.error("❌ MongoDB connection failed:", err.message);
+    process.exit(1);
   }
 };
 

@@ -1,11 +1,12 @@
 // frontend/pages/businesses/checkout.tsx
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { Product } from '../../types/product';
-import { api } from '../../utils/api';
-import { DeliveryCreate } from '../../types/delivery'; // Import DeliveryCreate type
-import { User } from '../../types/user'; // Import User type
-import { AuthService } from '../../services/authService'; // Import AuthService
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { Product } from "../../types/product";
+import { api } from "../../utils/api";
+import { DeliveryCreate } from "../../types/delivery";
+import { User } from "../../types/user";
+import { AuthService } from "../../services/authService";
+import { Button } from "@/components/ui/button";
 
 interface CartItem {
   product: Product;
@@ -15,18 +16,19 @@ interface CartItem {
 const Checkout: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
+  const [deliveryProvider, setDeliveryProvider] = useState("Sendy");
+  const [paymentMethod, setPaymentMethod] = useState("M-Pesa");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
-    // Load cart items from local storage
-    const storedCart = localStorage.getItem('cart');
+    const storedCart = localStorage.getItem("cart");
     if (storedCart) {
       setCartItems(JSON.parse(storedCart));
     }
 
-    // Load user data
     const currentUser = AuthService.getUser();
     setUser(currentUser);
     setLoading(false);
@@ -41,78 +43,126 @@ const Checkout: React.FC = () => {
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      setError('You must be logged in to place an order.');
+      setError("You must be logged in to place an order.");
       return;
     }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Create order in backend
-      const orderResponse = await api.post('/orders', {
+      const orderResponse = await api.post("/orders", {
         items: cartItems.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
         })),
         total: calculateTotal(),
         businessId: user.id,
+        paymentMethod,
       });
 
       const orderId = orderResponse.data.id;
 
-      // Create delivery in backend
       const deliveryData: DeliveryCreate = {
-        orderId: orderId,
-        farmerId: cartItems[0].product.farmerId, // Assuming all items from same farmer for simplicity
+        orderId,
+        farmerId: cartItems[0].product.farmerId,
         businessId: user.id,
-        deliveryAddress: (user as any).deliveryAddress, // Type assertion
-        deliveryDate: new Date().toISOString().split('T')[0], // Today's date
-        deliveryTime: '10:00', // Default time
-        deliveryStatus: 'pending',
-        deliveryFee: 100, // Example fee
+        deliveryAddress: (user as any).deliveryAddress || "Nairobi CBD",
+        deliveryDate: new Date().toISOString().split("T")[0],
+        deliveryTime: "10:00",
+        deliveryStatus: "pending",
+        deliveryFee: 100,
+        provider: deliveryProvider,
       };
 
-      await api.post('/deliveries', deliveryData);
+      await api.post("/deliveries", deliveryData);
 
-      // Clear cart
-      localStorage.removeItem('cart');
+      localStorage.removeItem("cart");
       setCartItems([]);
 
-      router.push('/businesses/orders'); // Redirect to orders page
+      router.push("/businesses/orders");
     } catch (err: any) {
-      setError(err.message || 'Failed to place order.');
+      setError(err.message || "Failed to place order.");
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '20px' }}>Placing order...</div>;
+    return <div className="text-center py-6">Placing order...</div>;
   }
 
   if (error) {
-    return <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>Error: {error}</div>;
+    return (
+      <div className="text-center py-6 text-red-600 font-medium">
+        Error: {error}
+      </div>
+    );
   }
 
   if (cartItems.length === 0) {
-    return <div style={{ textAlign: 'center', padding: '20px' }}>Your cart is empty.</div>;
+    return (
+      <div className="text-center py-6 text-gray-600">Your cart is empty.</div>
+    );
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>Checkout</h2>
-      <div>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">🧾 Checkout</h1>
+
+      <div className="space-y-4 border-b pb-4">
         {cartItems.map((item) => (
-          <div key={item.product.id} style={{ borderBottom: '1px solid #eee', padding: '10px' }}>
-            {item.product.name} - Quantity: {item.quantity} - Price: Ksh {item.product.price * item.quantity}
+          <div
+            key={item.product.id}
+            className="flex justify-between items-center border p-3 rounded"
+          >
+            <div>
+              <p className="font-semibold">{item.product.name}</p>
+              <p className="text-sm text-gray-500">
+                Qty: {item.quantity} x Ksh {item.product.price}
+              </p>
+            </div>
+            <p className="font-bold">
+              Ksh {item.product.price * item.quantity}
+            </p>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: '20px', textAlign: 'right' }}>
-        <strong>Total: Ksh {calculateTotal()}</strong>
+
+      <div className="mt-4 text-right font-semibold text-lg">
+        Total: Ksh {calculateTotal()}
       </div>
-      <div style={{ marginTop: '20px', textAlign: 'right' }}>
-        <button onClick={handlePlaceOrder}>Place Order</button>
+
+      <div className="mt-6 space-y-4">
+        <div>
+          <label className="block font-medium mb-1">🚚 Delivery Provider</label>
+          <select
+            className="w-full p-2 border rounded"
+            value={deliveryProvider}
+            onChange={(e) => setDeliveryProvider(e.target.value)}
+          >
+            <option value="Sendy">Sendy</option>
+            <option value="Glovo">Glovo</option>
+            <option value="Panda">Panda</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1">💳 Payment Method</label>
+          <select
+            className="w-full p-2 border rounded"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="M-Pesa">M-Pesa</option>
+            <option value="Stripe">Stripe</option>
+            <option value="PayPal">PayPal</option>
+          </select>
+        </div>
+
+        <Button onClick={handlePlaceOrder} className="w-full mt-4">
+          ✅ Confirm & Place Order
+        </Button>
       </div>
     </div>
   );

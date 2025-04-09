@@ -1,36 +1,41 @@
-// ask-mkulima/backend/utils/errorHandler.js
-
-function errorHandler(err, req, res, next) {
-    console.error('Error:', err.stack); // Log the error stack for debugging
-  
-    // Default error response
-    let statusCode = 500;
-    let message = 'Internal Server Error';
-  
-    // Customize error response based on error type (optional)
-    if (err.name === 'ValidationError') {
-      statusCode = 400;
-      message = err.message; // Use the validation error message
-    } else if (err.name === 'CastError') {
-      statusCode = 400;
-      message = 'Invalid data provided.'; // Generic message for cast errors
-    } else if (err.name === 'UnauthorizedError') {
-      statusCode = 401;
-      message = 'Unauthorized access.';
-    } else if (err.code === 11000) { // MongoDB duplicate key error
-      statusCode = 400;
-      message = 'Duplicate key error.';
-    } else if (err.message === 'Not Found') {
-      statusCode = 404;
-      message = 'Resource not found.';
-    }
-  
-    res.status(statusCode).json({
-      error: {
-        message: message,
-        details: process.env.NODE_ENV === 'development' ? err.stack : undefined, // Include stack in dev mode
-      },
-    });
+// Custom error class to create structured errors
+class ErrorResponse extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
   }
-  
-  module.exports = errorHandler;
+}
+
+// Error handler middleware
+const errorHandler = (err, req, res, next) => {
+  // Handle specific error cases
+  let error = { ...err };
+  error.message = err.message;
+
+  // Mongoose bad objectId error
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    const message = `Resource not found with id of ${err.value}`;
+    error = new ErrorResponse(message, 404);
+  }
+
+  // Mongoose duplicate key error
+  if (err.code === 11000) {
+    const message = `Duplicate field value entered`;
+    error = new ErrorResponse(message, 400);
+  }
+
+  // Mongoose validation error
+  if (err.name === 'ValidationError') {
+    const message = Object.values(err.errors).map(val => val.message).join(', ');
+    error = new ErrorResponse(message, 400);
+  }
+
+  // If the error isn't one of the above, send the generic error message
+  res.status(error.statusCode || 500).json({
+    success: false,
+    message: error.message || 'Server Error',
+  });
+};
+
+module.exports = { errorHandler, ErrorResponse };

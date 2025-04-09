@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { AuthService } from '../../services/authService';
 import { User } from '../../types/user';
-import ChartComponent from '../../components/UI/Chart'; // Import ChartComponent
+import ChartComponent from '../../components/ui/Chart'; // Import ChartComponent
 
 const FarmerDashboard: React.FC = () => {
   const router = useRouter();

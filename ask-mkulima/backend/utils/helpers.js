@@ -1,56 +1,52 @@
+// Helper function to validate email format
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
-// Example: Function to generate a random string (e.g., for unique IDs)
-function generateRandomString(length) {
-    let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
+// Helper function to validate phone number (Kenyan phone format: +254xxxxxxxxx)
+const isValidPhone = (phone) => {
+  const phoneRegex = /^\+254\d{9}$/;
+  return phoneRegex.test(phone);
+};
+
+// Helper function to generate a random alphanumeric string (e.g., for order IDs or verification codes)
+const generateRandomString = (length = 10) => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
-  
-  // Example: Function to format a date
-  function formatDate(date) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-    return new Date(date).toLocaleDateString(undefined, options);
-  }
-  
-  // Example: Function to check if an object is empty
-  function isEmptyObject(obj) {
-    return Object.keys(obj).length === 0;
-  }
-  
-  // Example: Function to calculate distance between two coordinates (using Haversine formula)
-  function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d;
-  }
-  
-  function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-  }
-  
-  // Example: Function to normalize a string for search (e.g., lowercase, remove accents)
-  function normalizeString(str) {
-    return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-  
-  // Add more helper functions as needed...
-  
-  module.exports = {
-    generateRandomString,
-    formatDate,
-    isEmptyObject,
-    calculateDistance,
-    normalizeString,
-    // Export other helper functions here
-  };
+  return result;
+};
+
+// Helper function to calculate the total price of an order (example: based on product price and quantity)
+const calculateTotalPrice = (productPrice, quantity) => {
+  return productPrice * quantity;
+};
+
+// Helper function to convert currency (example: KES to USD - this can be expanded for other currencies)
+const convertCurrency = (amount, rate) => {
+  return amount * rate;
+};
+
+// Helper function to check if a string is empty
+const isEmpty = (str) => {
+  return !str || str.trim().length === 0;
+};
+
+// Helper function to format a date to a readable string (useful for order timestamps or logs)
+const formatDate = (date, format = 'YYYY-MM-DD HH:mm:ss') => {
+  const moment = require('moment');
+  return moment(date).format(format);
+};
+
+module.exports = {
+  isValidEmail,
+  isValidPhone,
+  generateRandomString,
+  calculateTotalPrice,
+  convertCurrency,
+  isEmpty,
+  formatDate,
+};

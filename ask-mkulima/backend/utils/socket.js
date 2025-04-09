@@ -1,37 +1,36 @@
-const socketIo = require('socket.io');
+const { Server } = require("socket.io");
 
-function setupSocket(server) {
-  const io = socketIo(server, {
+// Create a Socket.io instance that hooks into the existing HTTP server
+const setupSocket = (server) => {
+  const io = new Server(server, {
     cors: {
-      origin: '*', // Adjust as needed for security
-      methods: ['GET', 'POST'],
+      origin: "*", // You can specify allowed domains here for security
+      methods: ["GET", "POST"],
     },
   });
 
-  io.on('connection', (socket) => {
-    console.log('A user connected');
+  // Connect a new socket
+  io.on("connection", (socket) => {
+    console.log("A user connected:", socket.id);
 
-    socket.on('join_room', (roomId) => {
-      socket.join(roomId);
-      console.log(`User joined room: ${roomId}`);
+    // Listen for a specific event (e.g., a chat message)
+    socket.on("sendMessage", (data) => {
+      console.log("Message received:", data);
+      // Emit a message to all connected clients (broadcast)
+      io.emit("newMessage", data);
     });
 
-    socket.on('send_message', (data) => {
-      io.to(data.sender).emit('message', data); // send to the room
-    });
+    // Example of emitting events back to the client
+    socket.emit("welcomeMessage", { message: "Welcome to Ask Mkulima!" });
 
-    socket.on('typing', (roomId) => {
-      socket.to(roomId).emit('typing', socket.id);
-    });
-
-    socket.on('stopped typing', (roomId) => {
-      socket.to(roomId).emit('stopped typing', socket.id);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('A user disconnected');
+    // Handle disconnection
+    socket.on("disconnect", () => {
+      console.log("A user disconnected:", socket.id);
     });
   });
-}
 
-module.exports = { setupSocket };
+  // Return the instance of the socket server to be used in the app
+  return io;
+};
+
+module.exports = setupSocket;
